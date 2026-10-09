@@ -52,6 +52,10 @@ In initial experiments using cross-platform JavaScript (React Native), the autom
 * **My Role:** Diagnosed the root cause of background failures on mobile OSs, designed the shared-storage architecture, and established the operational logic (anti-spam cadence and permission boundaries).
 * **AI Collaboration:** Leveraged AI tools to accelerate the implementation of Kotlin services and React Native screens, using problem-solving and documentation analysis to test and validate real device behavior.
 
+## 📚 Detailed Documentation
+* **[Native Architecture Specification](docs/ARCHITECTURE.md):** Deep dive into the shared storage pattern, event flow, and native bridge design.
+* **[Native Module Integration](docs/NATIVE_INTEGRATION.md):** Android telephony service details and background execution mechanics.
+
 ---
 
 <details>
