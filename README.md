@@ -54,6 +54,13 @@ In initial experiments using cross-platform JavaScript (React Native), the autom
 * **Product Vision & Architecture:** I formulated the initial concept, identified the market friction (lost clients from missed calls), and designed the operational workflow. When complex payment gateways proved impractical, I pivoted to an on-device utility coupled with a lightweight remote licensing receiver on Supabase.
 * **AI-Steered Implementation:** I did not write the bulk of the Kotlin and React Native codebase by hand from scratch. Instead, I acted as the systems architect and prompt engineer: reading documentation, establishing functional constraints, and guiding AI assistants to produce the code. When OS background execution failed in practice, I directed the troubleshooting process that led to the native Kotlin service and shared-storage model.
 
+---
+
+## 💡 Lessons Learned & Engineering Takeaways
+* **Mobile OS Lifecycle Realities:** Working through background call interception taught me that cross-platform frameworks (React Native) have hard limits when the OS suspends background runtimes. Learning how Android manages processes (Doze Mode) highlighted why native platform boundaries (Kotlin services) are indispensable.
+* **Pragmatic Product Pivoting:** Starting with an overly complicated in-app checkout dream and running into real-world friction taught me to strip away non-essential features and prioritize the core value: catching missed calls immediately.
+* **Testing on Real Hardware:** Emulators often mask background throttling and battery optimizations. Testing on physical devices was crucial to catching bridge failures and designing the native `SharedPreferences` shared storage model.
+
 ## 📚 Detailed Documentation
 * **[Native Architecture Specification](docs/ARCHITECTURE.md):** Deep dive into the shared storage pattern, event flow, and native bridge design.
 * **[Native Module Integration](docs/NATIVE_INTEGRATION.md):** Android telephony service details and background execution mechanics.
@@ -69,4 +76,5 @@ Aplicação móvel híbrida para Android concebida para reter potenciais cliente
 * **Conceito & Modelo de Negócio:** A ideia original envolvia pagamentos complexos na app, mas foi feito um pivot pragmático para uma ferramenta instalada no telemóvel com validação remota de licenças mensais (via Supabase), ativada após confirmação de pagamento.
 * **Desafio Técnico:** O Android suspende o JavaScript quando o ecrã bloqueia. A solução passou por intercetar eventos através de um serviço nativo em Kotlin com `SharedPreferences` como fonte única da verdade para controlo de anti-spam (30 minutos) e histórico.
 * **O meu papel & Desenvolvimento com IA:** Não escrevi a maior parte do código Kotlin/React Native manualmente de raiz. O meu papel foi o de arquiteto de produto e engenheiro de sistemas: desenhei o fluxo, li documentação, defini as regras de negócio e orientei ferramentas de IA com instruções rigorosas para gerar a implementação, intervindo no diagnóstico e ajustes de código quando surgiram constrangimentos no telemóvel real.
+* **O que aprendi:** Os limites dos frameworks híbridos perante a gestão de energia e ciclo de vida de um SO móvel (Doze Mode), a importância de simplificar o produto inicial (pivot de pagamentos) e a necessidade de testar em hardware físico real.
 </details>
