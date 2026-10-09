@@ -5,9 +5,11 @@
 ---
 
 ## 💡 Why I Built This
-Independent professionals and service providers frequently miss incoming phone calls while working with clients, resulting in lost leads and frustrated customers.
+Independent professionals and service providers frequently miss incoming phone calls while working with clients, resulting in lost leads who turn to competitors.
 
-The objective of **ClientS Pro** was to establish an automated, reliable safety net: as soon as an incoming call is missed, the device immediately dispatches a customized, helpful SMS response to the caller.
+The original ambition was to build a full-scale commercial software service. However, integrating complex direct in-app payment processors proved overly burdensome for an early project. I pivoted towards a pragmatic, lightweight model:
+1. **On-Device Automation:** An Android application installed directly on the user's smartphone that automatically intercepts missed calls and immediately delivers tailored SMS replies.
+2. **Remote Subscription Licensing:** A lightweight verification receiver built on Supabase. Customers pay monthly off-platform (e.g., via bank transfer / MB WAY), and the app verifies active license status against their device identifier to unlock functionality.
 
 ---
 
@@ -49,8 +51,8 @@ In initial experiments using cross-platform JavaScript (React Native), the autom
 ---
 
 ## 🤖 Development & Engineering Approach
-* **My Role:** Diagnosed the root cause of background failures on mobile OSs, designed the shared-storage architecture, and established the operational logic (anti-spam cadence and permission boundaries).
-* **AI Collaboration:** Leveraged AI tools to accelerate the implementation of Kotlin services and React Native screens, using problem-solving and documentation analysis to test and validate real device behavior.
+* **Product Vision & Architecture:** I formulated the initial concept, identified the market friction (lost clients from missed calls), and designed the operational workflow. When complex payment gateways proved impractical, I pivoted to an on-device utility coupled with a lightweight remote licensing receiver on Supabase.
+* **AI-Steered Implementation:** I did not write the bulk of the Kotlin and React Native codebase by hand from scratch. Instead, I acted as the systems architect and prompt engineer: reading documentation, establishing functional constraints, and guiding AI assistants to produce the code. When OS background execution failed in practice, I directed the troubleshooting process that led to the native Kotlin service and shared-storage model.
 
 ## 📚 Detailed Documentation
 * **[Native Architecture Specification](docs/ARCHITECTURE.md):** Deep dive into the shared storage pattern, event flow, and native bridge design.
@@ -62,8 +64,9 @@ In initial experiments using cross-platform JavaScript (React Native), the autom
 <summary><b>🇵🇹 Versão em Português</b></summary>
 
 ### 📲 ClientS Pro — Automação de Chamadas e Resposta SMS em Segundo Plano
-Aplicação móvel híbrida para Android concebida para capturar chamadas perdidas e responder de forma instantânea e personalizada por SMS.
+Aplicação móvel híbrida para Android concebida para reter potenciais clientes ao responder de forma automática e imediata por SMS a chamadas perdidas.
 
-* **Desafio Superado:** O sistema operativo Android suspende a execução de código JavaScript quando o ecrã bloqueia ou a app vai para segundo plano. A solução passou por migrar o motor de eventos telefónicos para um serviço nativo em Kotlin e adotar `SharedPreferences` como fonte única da verdade para controlo de anti-spam (janela de 30 minutos) e histórico.
-* **Metodologia:** Condução do diagnóstico de ciclo de vida móvel e desenho da solução de persistência nativa, acelerando a escrita do código através de ferramentas de IA.
+* **Conceito & Modelo de Negócio:** A ideia original envolvia pagamentos complexos na app, mas foi feito um pivot pragmático para uma ferramenta instalada no telemóvel com validação remota de licenças mensais (via Supabase), ativada após confirmação de pagamento.
+* **Desafio Técnico:** O Android suspende o JavaScript quando o ecrã bloqueia. A solução passou por intercetar eventos através de um serviço nativo em Kotlin com `SharedPreferences` como fonte única da verdade para controlo de anti-spam (30 minutos) e histórico.
+* **O meu papel & Desenvolvimento com IA:** Não escrevi a maior parte do código Kotlin/React Native manualmente de raiz. O meu papel foi o de arquiteto de produto e engenheiro de sistemas: desenhei o fluxo, li documentação, defini as regras de negócio e orientei ferramentas de IA com instruções rigorosas para gerar a implementação, intervindo no diagnóstico e ajustes de código quando surgiram constrangimentos no telemóvel real.
 </details>
