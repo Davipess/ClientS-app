@@ -1,28 +1,26 @@
-# 🏗️ ARQUITETURA FINAL - ClientS Pro Features
+# 🏗️ System Architecture — ClientS Pro (Native Shared Storage)
 
-## 📐 VISÃO GERAL DA SOLUÇÃO
-
-Este documento descreve a arquitetura completa implementada para resolver os problemas de logging e anti-spam no ClientS.
-
----
-
-## 🔧 PROBLEMA ORIGINAL
-
-### ❌ O que estava quebrado:
-1. **Histórico vazio:** SMS enviados em background não apareciam na UI
-2. **Anti-spam falho:** Filtro de 30 minutos não bloqueava duplicatas
-3. **Bridge quebrada:** Event Emitters JS não funcionam em background
-4. **Botão teste falho:** `(global as any).testSmsLog` não existia
-
-### ✅ Causa raiz identificada:
-- **Problema fundamental:** React Native não pode executar código JS quando o app está em background
-- **Solução necessária:** Usar **SharedPreferences nativo** como fonte de verdade única
+## 📐 Solution Overview
+This document specifies the technical architecture engineered to solve background telephony event interception, resilient activity logging, and anti-spam rate limiting in ClientS Pro.
 
 ---
 
-## 🏛️ NOVA ARQUITETURA (SHARED STORAGE)
+## 🔧 The Architectural Challenge
 
-### 📊 Fluxo de Dados
+### ❌ The Breakdown of Traditional Hybrid Mobile Approaches:
+1. **Empty Activity History:** SMS dispatched while the device was locked or in background did not reflect in the UI.
+2. **Anti-Spam Bypass:** In-memory timers failed to prevent duplicate dispatches during rapid repeated calls.
+3. **Broken React Native Bridge:** Operating system battery optimizers (Doze Mode, AppStandby) suspend the JavaScript engine, breaking React Native event emitters and asynchronous queues.
+
+### ✅ Root Cause & Design Principle:
+* **Core Limitation:** JavaScript execution cannot be guaranteed when an Android application process is suspended in the background.
+* **Architectural Fix:** Decouple event processing from the JavaScript runtime by establishing **Android Native `SharedPreferences` as the Single Source of Truth**. The native layer executes the entire business loop independently, while the React Native UI functions as an observer that reconciles state upon resume.
+
+---
+
+## 🏛️ Shared Storage Architecture
+
+### 📊 End-to-End Data Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -30,61 +28,61 @@ Este documento descreve a arquitetura completa implementada para resolver os pro
 │                  CallKeeperService.kt                       │
 │                                                             │
 │  ┌──────────────────────────────────────────────────────┐  │
-│  │ 1. Chamada Perdida → scheduleSMS()                   │  │
+│  │ 1. Missed Call Event Detected → scheduleSMS()        │  │
 │  │                                                       │  │
-│  │ 2. Validações:                                       │  │
-│  │    ✓ Master Switch                                   │  │
-│  │    ✓ VIP (bypass tudo)                               │  │
-│  │    ✓ Blacklist                                       │  │
-│  │    ✓ Agenda (contactos)                              │  │
-│  │    ✓ Anti-Spam (30 min) ◄── LÊ SharedPreferences    │  │
+│  │ 2. Pipeline Validations:                             │  │
+│  │    ✓ Master Switch Check                             │  │
+│  │    ✓ VIP Whitelist (Bypasses cooldown)               │  │
+│  │    ✓ Blacklist Filter                                │  │
+│  │    ✓ Contact Book Rules                              │  │
+│  │    ✓ Anti-Spam Check (30 min) ◄── READ SharedPrefs   │  │
 │  │                                                       │  │
-│  │ 3. SMSHandler.sendSMS()                              │  │
+│  │ 3. SMS Dispatch via SMSHandler.sendSMS()             │  │
 │  │                                                       │  │
-│  │ 4. logSmsToSharedPrefs() ──► ESCREVE SharedPrefs    │  │
-│  │    - Formato: timestamp|número|template              │  │
+│  │ 4. logSmsToSharedPrefs() ──► WRITE SharedPrefs       │  │
+│  │    - Serialization: timestamp|phone_number|template   │  │
 │  │    - Key: "clients_logs" → "sms_history"            │  │
 │  │                                                       │  │
-│  │ 5. Salvar timestamp anti-spam                        │  │
+│  │ 5. Persist Anti-Spam Cooldown Timestamp              │  │
 │  │    - Key: "last_sent_+351912345678"                 │  │
 │  │    - Value: System.currentTimeMillis()              │  │
 │  └──────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
                             ↕️
-                   SharedPreferences
-                   (Armazenamento Nativo)
+                    SharedPreferences
+                  (Native Atomic Storage)
                             ↕️
 ┌─────────────────────────────────────────────────────────────┐
-│               REACT NATIVE (TypeScript)                     │
+│               REACT NATIVE LAYER (TypeScript)               │
 │                      App.tsx                                │
 │                                                             │
 │  ┌──────────────────────────────────────────────────────┐  │
-│  │ 1. App abre / Resume                                 │  │
+│  │ 1. Application Mount / Resume                        │  │
 │  │    ↓                                                 │  │
-│  │ 2. AppState listener detecta "active"               │  │
+│  │ 2. AppState Listener detects "active" state          │  │
 │  │    ↓                                                 │  │
-│  │ 3. syncLogsFromNative()                             │  │
+│  │ 3. syncLogsFromNative() Triggered                    │  │
 │  │    ↓                                                 │  │
-│  │ 4. CallKeeper.getSmsHistory() ◄── LÊ SharedPrefs   │  │
+│  │ 4. CallKeeper.getSmsHistory() ◄── READ SharedPrefs   │  │
 │  │    ↓                                                 │  │
-│  │ 5. Parse pipe-delimited string                      │  │
-│  │    timestamp|número|template → SmsLog[]             │  │
+│  │ 5. Parse Pipe-Delimited Log Stream                   │  │
+│  │    timestamp|number|template → SmsLog[]             │  │
 │  │    ↓                                                 │  │
-│  │ 6. setSmsLogs(parsedLogs) → ATUALIZA UI            │  │
+│  │ 6. setSmsLogs(parsedLogs) → Render State Update      │  │
 │  │    ↓                                                 │  │
-│  │ 7. UI renderiza "Histórico de Atividade"           │  │
-│  │    - Números formatados: +351 912 345 678          │  │
-│  │    - Template: A, B ou C                            │  │
-│  │    - Tempo: "há X min"                              │  │
+│  │ 7. UI displays "Activity History" Card:              │  │
+│  │    - Formatted Number: +351 912 345 678             │  │
+│  │    - Template: A, B, or C                           │  │
+│  │    - Relative Timestamp: "2 min ago"                │  │
 │  └──────────────────────────────────────────────────────┘  │
 │                                                             │
 │  ┌──────────────────────────────────────────────────────┐  │
-│  │ SYNC SETTINGS (App → Native)                        │  │
+│  │ SETTINGS SYNCHRONIZATION (App → Native Layer)        │  │
 │  │                                                       │  │
-│  │ • Anti-Spam ON/OFF                                   │  │
+│  │ • Anti-Spam Toggle State                             │  │
 │  │   App.tsx → CallKeeper.setAntiSpamEnabled()         │  │
 │  │                                                       │  │
-│  │ • Template Ativo (A/B/C)                            │  │
+│  │ • Active Message Template Index (A/B/C)              │  │
 │  │   App.tsx → CallKeeper.setActiveTemplateIndex()     │  │
 │  └──────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
@@ -92,13 +90,14 @@ Este documento descreve a arquitetura completa implementada para resolver os pro
 
 ---
 
-## 📁 ESTRUTURA DE CÓDIGO
+## 📁 Implementation Details
 
-### 1️⃣ Native Module (Kotlin)
+### 1️⃣ Native Android Core (Kotlin)
 
-#### **CallKeeperService.kt**
+#### **`CallKeeperService.kt`**
+Handles background evaluation and SMS dispatch directly from telephony broadcast events:
 ```kotlin
-// Linha ~440: CHECK #5 - Anti-Spam Filter
+// Step 1: Evaluate Anti-Spam Cooldown Window
 val antiSpamEnabled = prefs.getBoolean("@CallKeeper:antiSpamEnabled", false)
 if (antiSpamEnabled) {
   val lastSentTimestamp = prefs.getLong("last_sent_$normalizedPhone", 0L)
@@ -106,21 +105,21 @@ if (antiSpamEnabled) {
   val thirtyMinutes = 30 * 60 * 1000L
   
   if (timeDiff < thirtyMinutes) {
-    // ⏱️ BLOQUEAR SMS
+    // ⏱️ Cooldown active: Drop event to prevent spamming
     return@postDelayed
   }
 }
 
-// Linha ~475: Logging após envio
+// Step 2: Atomic Activity Logging
 val templateIndex = prefs.getInt("@CallKeeper:activeTemplateIndex", 0)
 logSmsToSharedPrefs(normalizedPhone, templateIndex)
 
-// Linha ~480: Timestamp para anti-spam
+// Step 3: Persist Cooldown Timestamp
 val editor = prefs.edit()
 editor.putLong("last_sent_$normalizedPhone", System.currentTimeMillis())
 editor.apply()
 
-// Linha ~107: Função de logging
+// Step 4: Storage Serialization Helper
 private fun logSmsToSharedPrefs(phoneNumber: String, templateIndex: Int) {
   val sharedPrefs = applicationContext.getSharedPreferences("clients_logs", Context.MODE_PRIVATE)
   val editor = sharedPrefs.edit()
@@ -131,16 +130,16 @@ private fun logSmsToSharedPrefs(phoneNumber: String, templateIndex: Int) {
   
   val currentLogs = sharedPrefs.getString("sms_history", "") ?: ""
   val newLogs = if (currentLogs.isEmpty()) logEntry else "$logEntry\n$currentLogs"
-  val lines = newLogs.split("\n").take(100).joinToString("\n")
+  val boundedLines = newLogs.split("\n").take(100).joinToString("\n")
   
-  editor.putString("sms_history", lines)
+  editor.putString("sms_history", boundedLines)
   editor.apply()
 }
 ```
 
-#### **CallKeeperModule.kt**
+#### **`CallKeeperModule.kt`**
+Exposes typed bridge interfaces to read shared storage and sync configuration from React Native:
 ```kotlin
-// Novas funções expostas ao React Native
 Function("getSmsHistory") {
   val context = appContext.reactContext ?: return@Function ""
   val prefs = context.getSharedPreferences("clients_logs", Context.MODE_PRIVATE)
@@ -162,27 +161,12 @@ Function("setActiveTemplateIndex") { index: Int ->
 
 ---
 
-### 2️⃣ React Native (TypeScript)
+### 2️⃣ Reactive UI Layer (TypeScript / React Native)
 
-#### **modules/expo-call-keeper/index.ts**
+#### **`App.tsx`**
+Syncs background history when returning to the foreground and synchronizes user preferences:
 ```typescript
-// Novas funções tipadas
-export function getSmsHistory(): string {
-  return CallKeeperModule.getSmsHistory();
-}
-
-export function setAntiSpamEnabled(enabled: boolean): boolean {
-  return CallKeeperModule.setAntiSpamEnabled(enabled);
-}
-
-export function setActiveTemplateIndex(index: number): boolean {
-  return CallKeeperModule.setActiveTemplateIndex(index);
-}
-```
-
-#### **App.tsx**
-```typescript
-// Linha ~306: Função principal de sincronização
+// Reconciles native logs into application state
 const syncLogsFromNative = async () => {
   const nativeHistoryString = await CallKeeper.getSmsHistory();
   
@@ -207,142 +191,56 @@ const syncLogsFromNative = async () => {
   }
 };
 
-// Linha ~360: Auto-sync no AppState
+// Lifecycle listener: Auto-sync on resume
 useEffect(() => {
-  syncLogsFromNative(); // Sync on mount
+  syncLogsFromNative();
   
   const subscription = Platform.OS === 'android' ? 
     AppState.addEventListener('change', (state: string) => {
       if (state === 'active') {
-        syncLogsFromNative(); // Sync on resume
+        syncLogsFromNative();
       }
     }) : null;
   
   return () => subscription?.remove();
 }, []);
-
-// Linha ~483: Sync Anti-Spam para Native
-useEffect(() => {
-  if (!isLoading) {
-    CallKeeper.setAntiSpamEnabled(antiSpamEnabled);
-  }
-}, [antiSpamEnabled]);
-
-// Linha ~403: Sync Template para Native
-useEffect(() => {
-  if (!isLoading) {
-    CallKeeper.setActiveTemplateIndex(activeTemplateIndex);
-  }
-}, [activeTemplateIndex]);
 ```
 
 ---
 
-## 🔄 CICLO DE VIDA COMPLETO
+## 🔄 End-to-End Execution Scenarios
 
-### Cenário 1: SMS Real (Background)
-```
-1. 📱 Chamada perdida → Native detecta
-2. ⏸️  App FECHADO (background)
-3. ✅ CHECK #5: Anti-spam verifica SharedPreferences
-4. 📤 SMS enviado via SMSHandler
-5. 📊 logSmsToSharedPrefs() salva: "1736451234567|+351912345678|A"
-6. 🕒 Timestamp salvo: "last_sent_+351912345678" = 1736451234567
-7. 💤 App ainda fechado...
-8. 📱 Usuário abre app
-9. 🔄 AppState listener detecta "active"
-10. 🔄 syncLogsFromNative() executa
-11. 📥 CallKeeper.getSmsHistory() lê SharedPreferences
-12. 🎨 UI atualizada: "+351 912 345 678 | Template A | há 2 min"
-```
+### Scenario A: Background Call & Cooldown (Screen Off)
+1. **Missed Call Received:** Telephony broadcast triggers `CallReceiver`.
+2. **Background Execution:** `CallKeeperService` spins up independently from React Native.
+3. **Anti-Spam Evaluation:** Inspects `last_sent_+351912345678` in `SharedPreferences`.
+   * If `elapsed < 30 minutes`: Drops SMS and exits cleanly.
+   * If `elapsed >= 30 minutes`: Dispatches templated SMS through Android `SmsManager`.
+4. **Atomic Storage Update:** Appends log entry and refreshes last-sent timestamp.
 
-### Cenário 2: Anti-Spam Bloqueio
-```
-1. 📱 Primeira chamada → SMS enviado (t=0)
-2. 🕒 Timestamp salvo: "last_sent_+351912345678" = 1736451234567
-3. 📱 Segunda chamada MESMO número (t=30s)
-4. ⏱️  CHECK #5: timeDiff = 30000ms < 1800000ms (30 min)
-5. 🚫 BLOQUEADO! Notificação: "⏱️ SMS bloqueado (Anti-Spam)"
-6. ⏳ Aguardar 30 minutos...
-7. 📱 Terceira chamada (t=31 min)
-8. ✅ CHECK #5: timeDiff > 30 min → OK
-9. 📤 SMS enviado normalmente
-```
-
-### Cenário 3: VIP Bypass
-```
-1. 📱 Chamada de número VIP
-2. 🌟 CHECK #2: É VIP? → SIM
-3. ⚡ BYPASS:
-   - ❌ Ignora Blacklist
-   - ❌ Ignora Agenda
-   - ❌ Ignora Anti-Spam
-4. 📤 SMS enviado IMEDIATAMENTE
-5. 📊 Logging normal
-6. 🕒 Timestamp salvo (para consistência)
-```
+### Scenario B: Application Launch & Reconciliation
+1. **User opens ClientS:** `AppState` transitions from `background` to `active`.
+2. **Bridge Invocation:** Calls `CallKeeper.getSmsHistory()`.
+3. **Stream Parsing:** Transforms serialized pipe entries into UI state arrays.
+4. **UI Render:** Activity log displays normalized numbers, template markers, and relative timestamps without dropping any background events.
 
 ---
 
-## 🎯 GARANTIAS DE FUNCIONAMENTO
+<details>
+<summary><b>🇵🇹 Versão em Português</b></summary>
 
-### ✅ O que FUNCIONA agora:
-1. **Logging em Background:** Logs salvos SEMPRE, app fechado ou aberto
-2. **Anti-Spam Robusto:** Bloqueio < 30 min via SharedPreferences nativo
-3. **Sincronização Automática:** AppState detecta resume e atualiza UI
-4. **VIP Priority:** Bypass total de todas as regras
-5. **A/B/C Testing:** Template correto registado em cada log
-6. **Formatação UI:** Números +351 912 345 678, tempo relativo
-7. **Botão Teste:** Força sync e mostra resultado
+### 🏗️ Arquitetura Final — ClientS Pro (Armazenamento Nativo Partilhado)
 
-### ✅ O que NÃO pode dar errado:
-- ❌ Logs perdidos (SharedPreferences é persistente)
-- ❌ Anti-spam ignorado (CHECK #5 obrigatório antes de envio)
-- ❌ UI dessincronizada (sync automático no resume)
-- ❌ Template errado (índice sincronizado via Native Module)
+#### 📐 Visão Geral da Solução
+Este documento descreve a arquitetura concebida para resolver os constrangimentos de execução em segundo plano, registo de atividade e controlo de anti-spam no ClientS Pro.
 
----
+#### 🔧 Desafio Identificado
+* **Problema:** O React Native não garante a execução de código JavaScript quando a aplicação está em segundo plano ou o ecrã está bloqueado (Doze Mode do Android). Event emitters e temporizadores em JS falham.
+* **Solução:** Utilização do `SharedPreferences` nativo do Android como **Fonte Única da Verdade**. O serviço nativo em Kotlin (`CallKeeperService.kt`) processa todo o pipeline de interceção, validação e envio de SMS de forma autónoma.
 
-## 📝 MANUTENÇÃO FUTURA
-
-### Para adicionar novo campo ao log:
-1. **Native:** Modificar `logSmsToSharedPrefs()` → Adicionar campo no formato pipe
-2. **React:** Modificar `syncLogsFromNative()` → Parse novo campo
-3. **UI:** Adicionar renderização no histórico
-
-### Para alterar tempo de anti-spam:
-```kotlin
-// CallKeeperService.kt linha ~450
-val thirtyMinutes = 60 * 60 * 1000L // Mudar para 60 minutos
-```
-
-### Para aumentar capacidade de logs:
-```kotlin
-// CallKeeperService.kt linha ~139
-val lines = newLogs.split("\n").take(500).joinToString("\n") // 100 → 500
-```
-
----
-
-## 🏆 RESULTADO FINAL
-
-### Antes (QUEBRADO):
-- ❌ Histórico vazio para SMS reais
-- ❌ Anti-spam não funciona
-- ❌ Bridge JS não existe em background
-- ❌ Dependência de Event Emitters
-
-### Depois (ROBUSTO):
-- ✅ Histórico completo (background + foreground)
-- ✅ Anti-spam 30 min funcional
-- ✅ SharedPreferences como fonte única de verdade
-- ✅ Sincronização automática no resume
-- ✅ Zero dependência de JS em background
-
----
-
-**ARQUITETO:** Senior Android & React Native Architect  
-**CLIENTE:** David Figueiredo  
-**PROJETO:** ClientS - SMS Automation  
-**DATA:** 9 Janeiro 2026  
-**STATUS:** ✅ PRODUCTION READY
+#### 🔄 Fluxo de Dados
+1. **Chamada Perdida:** O serviço nativo interceta o evento telefónico.
+2. **Validações:** Verifica Master Switch, Whitelist VIP, Blacklist e cooldown de 30 minutos em `SharedPreferences`.
+3. **Envio:** Dispara SMS via `SmsManager` e regista o log atómico em `SharedPreferences` (`timestamp|número|template`).
+4. **Sincronização:** Quando a aplicação React Native é reaberta, o listener de `AppState` lê o histórico nativo e atualiza a interface gráfica.
+</details>
