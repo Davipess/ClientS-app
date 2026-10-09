@@ -1,6 +1,29 @@
 # 📲 ClientS Pro: Resilient Call Response & Messaging Automation
 
+<p align="left">
+  <a href="https://developer.android.com/"><img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=flat&logo=android&logoColor=white" alt="Android"></a>
+  <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Native-Kotlin-7F52FF?style=flat&logo=kotlin&logoColor=white" alt="Kotlin"></a>
+  <a href="https://reactnative.dev/"><img src="https://img.shields.io/badge/UI-React_Native-61DAFB?style=flat&logo=react&logoColor=black" alt="React Native"></a>
+  <a href="https://expo.dev/"><img src="https://img.shields.io/badge/Framework-Expo-000020?style=flat&logo=expo&logoColor=white" alt="Expo"></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat&logo=typescript&logoColor=white" alt="TypeScript"></a>
+  <a href="https://supabase.com/"><img src="https://img.shields.io/badge/Licensing-Supabase-3ECF8E?style=flat&logo=supabase&logoColor=white" alt="Supabase"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat" alt="MIT License"></a>
+</p>
+
 > A hybrid mobile utility for Android designed to capture missed calls and automatically deliver templated SMS responses, engineered to overcome mobile background execution constraints.
+
+---
+
+## 📑 Table of Contents
+* [💡 Why I Built This](#-why-i-built-this)
+* [⚙️ The Technical Challenge: Surviving Android Background Restrictions](#️-the-technical-challenge-surviving-android-background-restrictions)
+* [🏗️ Architecture Overview](#️-architecture-overview)
+* [🛠️ Stack & Technologies](#️-stack--technologies)
+* [🤖 Development & Engineering Approach](#-development--engineering-approach)
+* [💡 Lessons Learned & Engineering Takeaways](#-lessons-learned--engineering-takeaways)
+* [🧪 Testing & Hardware Verification](#-testing--hardware-verification)
+* [📚 Detailed Documentation](#-detailed-documentation)
+* [🇵🇹 Versão em Português](#-versão-em-português)
 
 ---
 
@@ -44,9 +67,13 @@ In initial experiments using cross-platform JavaScript (React Native), the autom
 ---
 
 ## 🛠️ Stack & Technologies
-* **Native Android Core:** Kotlin, Android Telephony APIs, SharedPreferences
-* **Cross-Platform UI:** React Native, TypeScript
-* **Cloud & Data Sync:** Supabase (PostgreSQL)
+
+| Layer | Technologies | Role in System |
+|---|---|---|
+| **Native Android Core** | Kotlin, Android Telephony APIs, BroadcastReceiver | Autonomous background call interception and SMS dispatching |
+| **Shared Persistence** | Android `SharedPreferences` | Single Source of Truth for cooldowns, logs, and user configuration |
+| **Mobile UI** | React Native, Expo, TypeScript | Clean dashboard for rule toggling, template editing, and history review |
+| **Cloud Licensing** | Supabase (PostgreSQL, REST) | Lightweight remote validation of active monthly subscriptions |
 
 ---
 
@@ -60,6 +87,22 @@ In initial experiments using cross-platform JavaScript (React Native), the autom
 * **Mobile OS Lifecycle Realities:** Working through background call interception taught me that cross-platform frameworks (React Native) have hard limits when the OS suspends background runtimes. Learning how Android manages processes (Doze Mode) highlighted why native platform boundaries (Kotlin services) are indispensable.
 * **Pragmatic Product Pivoting:** Starting with an overly complicated in-app checkout dream and running into real-world friction taught me to strip away non-essential features and prioritize the core value: catching missed calls immediately.
 * **Testing on Real Hardware:** Emulators often mask background throttling and battery optimizations. Testing on physical devices was crucial to catching bridge failures and designing the native `SharedPreferences` shared storage model.
+
+---
+
+## 🧪 Testing & Hardware Verification
+
+To verify that background telephony interception and SMS dispatches operate reliably on a connected Android device or emulator with ADB:
+
+```bash
+# Monitor native module logs in real time
+adb logcat -s CallKeeper:D SMSHandler:I
+```
+
+* **Test Case 1 (Background Dispatch):** Swipe the app away from memory, place a missed call to the device, and verify delivery via logcat.
+* **Test Case 2 (Anti-Spam Filter):** Call a second time within the cooldown period and verify that the duplicate SMS is suppressed.
+
+---
 
 ## 📚 Detailed Documentation
 * **[Native Architecture Specification](docs/ARCHITECTURE.md):** Deep dive into the shared storage pattern, event flow, and native bridge design.
