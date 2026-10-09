@@ -1,4 +1,4 @@
-# 📲 ClientS Pro — Resilient Call Response & Messaging Automation
+# 📲 ClientS Pro: Resilient Call Response & Messaging Automation
 
 > A hybrid mobile utility for Android designed to capture missed calls and automatically deliver templated SMS responses, engineered to overcome mobile background execution constraints.
 
@@ -27,18 +27,18 @@ In initial experiments using cross-platform JavaScript (React Native), the autom
 
 ```
 [ Incoming Call Missed ]
-           │
-           ▼
+           |
+           v
 [ Android Native Service (Kotlin) ]
-   ├── 1. Rule Evaluation (Master toggle / VIP whitelist / Blacklist)
-   ├── 2. Anti-Spam Check ◄── [ SharedPreferences (Native Storage) ]
-   │      (Drops event if sent within cooldown window)
-   ├── 3. Native SMS Dispatch ──► [ Android SmsManager ]
-   └── 4. Atomic Record Write ──► [ SharedPreferences ]
-           │
-           │ (On App Resume)
-           ▼
-[ React Native UI (TypeScript) ] ──► Syncs & Displays History
+   +--> 1. Rule Evaluation (Master toggle / VIP whitelist / Blacklist)
+   +--> 2. Anti-Spam Check <--- [ SharedPreferences (Native Storage) ]
+   |      (Drops event if sent within cooldown window)
+   +--> 3. Native SMS Dispatch ---> [ Android SmsManager ]
+   +--> 4. Atomic Record Write ---> [ SharedPreferences ]
+           |
+           | (On App Resume)
+           v
+[ React Native UI (TypeScript) ] ---> Syncs & Displays History
 ```
 
 ---
@@ -70,7 +70,7 @@ In initial experiments using cross-platform JavaScript (React Native), the autom
 <details>
 <summary><b>🇵🇹 Versão em Português</b></summary>
 
-### 📲 ClientS Pro — Automação de Chamadas e Resposta SMS em Segundo Plano
+### 📲 ClientS Pro: Automação de Chamadas e Resposta SMS em Segundo Plano
 Aplicação móvel híbrida para Android concebida para reter potenciais clientes ao responder de forma automática e imediata por SMS a chamadas perdidas.
 
 * **Conceito & Modelo de Negócio:** A ideia original envolvia pagamentos complexos na app, mas foi feito um pivot pragmático para uma ferramenta instalada no telemóvel com validação remota de licenças mensais (via Supabase), ativada após confirmação de pagamento.

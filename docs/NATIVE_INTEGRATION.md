@@ -1,4 +1,4 @@
-# 🔗 Native Module Integration Guide — ClientS Pro
+# 🔗 Native Module Integration Guide: ClientS Pro
 
 ## 🎯 Overview
 This guide documents the integration between the custom Android native module (`expo-call-keeper`) and the React Native application layer. The native bridge ensures that incoming telephony events, automated SMS dispatches, and activity logs remain 100% resilient even when the user interface is completely closed or the device is locked.
@@ -65,7 +65,7 @@ To test background execution on a physical Android device or emulator with ADB:
 <details>
 <summary><b>🇵🇹 Versão em Português</b></summary>
 
-### 🔗 Guia de Integração do Módulo Nativo — ClientS Pro
+### 🔗 Guia de Integração do Módulo Nativo: ClientS Pro
 
 #### 🎯 Visão Geral
 Este guia documenta a integração entre o módulo nativo Android (`expo-call-keeper`) e a camada React Native. A arquitetura garante que eventos telefónicos, envio de SMS e registos de atividade funcionam de forma fiável mesmo com o telemóvel bloqueado ou a aplicação fechada.

@@ -1,4 +1,4 @@
-# 🏗️ System Architecture — ClientS Pro (Native Shared Storage)
+# 🏗️ System Architecture: ClientS Pro (Native Shared Storage)
 
 ## 📐 Solution Overview
 This document specifies the technical architecture engineered to solve background telephony event interception, resilient activity logging, and anti-spam rate limiting in ClientS Pro.
@@ -229,7 +229,7 @@ useEffect(() => {
 <details>
 <summary><b>🇵🇹 Versão em Português</b></summary>
 
-### 🏗️ Arquitetura Final — ClientS Pro (Armazenamento Nativo Partilhado)
+### 🏗️ Arquitetura Final: ClientS Pro (Armazenamento Nativo Partilhado)
 
 #### 📐 Visão Geral da Solução
 Este documento descreve a arquitetura concebida para resolver os constrangimentos de execução em segundo plano, registo de atividade e controlo de anti-spam no ClientS Pro.
